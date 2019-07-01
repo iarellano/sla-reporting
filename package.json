@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "splunk-logging": "^0.10.1"
+  }
+}
