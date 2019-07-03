@@ -1,10 +1,27 @@
 'use strict';
 
+var SplunkLogger = require("splunk-logging").Logger;
+var Bunyan = require("bunyan");
+var RotatingFileStream = require('bunyan-rotating-file-stream');
+
+
 module.exports.init = function(config, logger, stats) {
 
-    var SplunkLogger = require("splunk-logging").Logger;
-
-    var Logger = new SplunkLogger(config.splunk.config);
+    var splunk;
+    var bunyan;
+    if (config.splunk && config.splunk.host) {
+        splunk = new SplunkLogger(config.splunk.config);
+    }
+    if (config.bunyan && config.bunyan.stream) {
+        var bunyanConfig = {
+            name: config.bunyan.name,
+            streams: [{
+                type: 'raw',
+                stream: new RotatingFileStream(config.bunyan.stream)
+            }]
+        }
+        bunyan = Bunyan.createLogger(bunyanConfig)
+    }
 
     return {
 
@@ -43,6 +60,8 @@ module.exports.init = function(config, logger, stats) {
                 record.developer_email = token.developer_email;
                 record.developer_app   = token.application_name;
                 record.client_id       = token.client_id;
+                record.custom_demo_att = token.custom_demo_att;
+
                 var prodList = token.api_product_list;
                 if (prodList && prodList.length) {
                     if (typeof prodList === 'string') { prodList = prodList.slice(1, -1).split(','); }
@@ -65,10 +84,15 @@ module.exports.init = function(config, logger, stats) {
                 message: record
             };
 
-            logger.info(record, "sla-reporting")
-            Logger.send(payload, function(err, resp, body) {
-                console.log("Response from Splunk", body);
-            });
+            if (bunyan) {
+                bunyan.info("Helo there");
+                bunyan.info(record, "sla-reporting");
+            }
+            if (splunk) {
+                splunk.send(payload, function (err, resp, body) {
+                    console.log("Response from Splunk", body);
+                });
+            }
             next(null, data);
         }
     };

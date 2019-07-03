@@ -1,6 +1,6 @@
 # sla-reporting
 
-Allows to capture SLA statistics per application consuming the microgateway and send them to splunk
+Allows to capture SLA statistics per application consuming the microgateway and optionaly send them to splunk or store them in file system 
 
 ## Install dependencies
 
@@ -22,6 +22,21 @@ sla-reporting:
       source: "rmg"
       index: "main"
       sourcetype: "json"
+```
+
+Add file system log config
+```yaml
+sla-reporting:
+  bunyan:
+    name: "sla-reporting"
+    stream:
+      path: "/var/tmp/sla-reporting.log"
+      period: '1d'
+      totalFiles: 20
+      rotateExisting: false
+      threshold: '10m'
+      gzip: false
+
 ```
 
 Enable the plugin in execution sequence.

@@ -8,6 +8,8 @@
   },
   "author": "Isaias Arellano <isaias.arellano.cs@bcbsa.com>",
   "dependencies": {
-    "splunk-logging": "^0.10.1"
+    "splunk-logging": "^0.10.1",
+    "bunyan": "^1.8.12",
+    "bunyan-rotating-file-stream": "^1.6.3"
   }
 }
