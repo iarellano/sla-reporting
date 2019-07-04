@@ -1,5 +1,6 @@
 # sla-reporting
 
+## Summary
 Allows to capture SLA statistics per application consuming the microgateway and optionaly send them to splunk or store them in file system 
 
 ## Install dependencies

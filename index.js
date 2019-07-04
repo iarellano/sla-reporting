@@ -59,18 +59,18 @@ module.exports.init = function(config, logger, stats) {
             next(null, data);
         },
 
-        onresponse: function(req, res, data, next) {
+        onresponse: function(req, res, next) {
             var record = req.sla_reporting;
             record.target_received_start_timestamp = Date.now();
-            next(null, data);
+            next(null);
         },
 
         onend_response: function(req, res, data, next) {
 
             var record = req.sla_reporting;
+            var now = Date.now();
+
             record.response_status_code      = res.statusCode;
-
-
             var token = req.token;
             if (token) {
                 record.developer_email = token.developer_email;
@@ -88,8 +88,8 @@ module.exports.init = function(config, logger, stats) {
                 record.client_cn = token.client_cn;
 
             }
-            record.target_received_end_timestamp = req.headers['target_received_start_timestamp'] + 1;
-            record.client_sent_start_timestamp = Date.now();
+            record.target_received_end_timestamp = now;
+            record.client_sent_start_timestamp = now;
             next(null, data);
             record.client_sent_end_timestamp = Date.now();
 
