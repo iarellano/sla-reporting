@@ -24,6 +24,58 @@ module.exports.init = function(config, logger, stats) {
         bunyan = Bunyan.createLogger(bunyanConfig)
     }
 
+    function log(req, res, next, data, error) {
+        var record = req.sla_reporting;
+        var now = Date.now();
+
+        record.response_status_code      = res.statusCode;
+        var token = req.token;
+        if (token) {
+            record.developer_email = token.developer_email;
+            record.developer_app   = token.application_name;
+            record.client_id       = token.client_id;
+            record.custom_demo_att = token.custom_demo_att;
+
+            var prodList = token.api_product_list;
+            if (prodList && prodList.length) {
+                if (typeof prodList === 'string') { prodList = prodList.slice(1, -1).split(','); }
+                record.api_product = prodList[0];
+            }
+            record.bcbsa_client_id = token.bcbsa_client_id;
+            record.env = token.env;
+            record.client_cn = token.client_cn;
+
+        }
+        record.target_received_end_timestamp = now;
+        record.client_sent_start_timestamp = now;
+        if (error) {
+            next();
+        } else {
+            next(null, data);
+        }
+        record.client_sent_end_timestamp = Date.now();
+
+        if (bunyan) {
+            if (error) {
+                bunyan.error(record, "sla-reporting");
+            } else {
+                bunyan.info(record, "sla-reporting");
+            }
+        }
+        if (splunk) {
+            if (error) {
+                record.error = error;
+            }
+            var payload = {
+                metadata: config.splunk.metadata,
+                message: record
+            };
+            splunk.send(payload, function (err, resp, body) {
+                debug("Response from Splunk", body);
+            });
+        }
+    }
+
     return {
 
         onrequest: function(req, res, next) {
@@ -66,46 +118,11 @@ module.exports.init = function(config, logger, stats) {
         },
 
         onend_response: function(req, res, data, next) {
+            log(req, res, next, data);
+        },
 
-            var record = req.sla_reporting;
-            var now = Date.now();
-
-            record.response_status_code      = res.statusCode;
-            var token = req.token;
-            if (token) {
-                record.developer_email = token.developer_email;
-                record.developer_app   = token.application_name;
-                record.client_id       = token.client_id;
-                record.custom_demo_att = token.custom_demo_att;
-
-                var prodList = token.api_product_list;
-                if (prodList && prodList.length) {
-                    if (typeof prodList === 'string') { prodList = prodList.slice(1, -1).split(','); }
-                    record.api_product = prodList[0];
-                }
-                record.bcbsa_client_id = token.bcbsa_client_id;
-                record.env = token.env;
-                record.client_cn = token.client_cn;
-
-            }
-            record.target_received_end_timestamp = now;
-            record.client_sent_start_timestamp = now;
-            next(null, data);
-            record.client_sent_end_timestamp = Date.now();
-
-            var payload = {
-                metadata: config.splunk.metadata,
-                message: record
-            };
-
-            if (bunyan) {
-                bunyan.info(record, "sla-reporting");
-            }
-            if (splunk) {
-                splunk.send(payload, function (err, resp, body) {
-                    debug("Response from Splunk", body);
-                });
-            }
+        onerror_response: function(req, res, err, next) {
+            log(req, res, next, null, err)
         }
     };
 };
