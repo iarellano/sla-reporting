@@ -123,6 +123,7 @@ module.exports.init = function(config, logger, stats) {
 
         onerror_response: function(req, res, err, next) {
             log(req, res, next, null, err)
+            debug('plugin onerror_response ' + err);
         }
     };
 };
