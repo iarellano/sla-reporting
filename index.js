@@ -29,6 +29,8 @@ module.exports.init = function(config, logger, stats) {
         var now = Date.now();
 
         record.response_status_code      = res.statusCode;
+        record.contentType = res.getHeader('content-type');
+
         var token = req.token;
         if (token) {
             record.developer_email = token.developer_email;
@@ -79,6 +81,7 @@ module.exports.init = function(config, logger, stats) {
     return {
 
         onrequest: function(req, res, next) {
+            debug('onrequest');
             var now = Date.now();
 
             var record = {
@@ -103,6 +106,7 @@ module.exports.init = function(config, logger, stats) {
         },
 
         onend_request: function(req, res, data, next) {
+            debug('onend_request');
             var record = req.sla_reporting;
             var now = Date.now();
             record.client_received_end_timestamp = now;
@@ -112,18 +116,20 @@ module.exports.init = function(config, logger, stats) {
         },
 
         onresponse: function(req, res, next) {
+            debug('plugin onresponse');
             var record = req.sla_reporting;
             record.target_received_start_timestamp = Date.now();
             next(null);
         },
 
         onend_response: function(req, res, data, next) {
+            debug('plugin onend_response');
             log(req, res, next, data);
         },
 
         onerror_response: function(req, res, err, next) {
-            log(req, res, next, null, err)
             debug('plugin onerror_response ' + err);
+            log(req, res, next, null, err)
         }
     };
 };
